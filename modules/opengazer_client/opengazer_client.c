@@ -58,38 +58,53 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 
 	switch (action) {
 	case GF_TERM_EXT_START:
-				{printf("Listen activating.\n");
+	{
+		printf("Listen activating.\n");
 
-				/* Create socket from which to read */
-				opengazer->sock = socket(AF_INET, SOCK_DGRAM, 0);
-				if (opengazer->sock < 0)   {
-					perror("Opening datagram socket");
-					exit(1);
-				}
+		opengazer->term = (GF_Terminal *) param;
+		opengazer->term->compositor->gazer_enabled = GF_TRUE;
+		/* Create socket from which to read */
+		opengazer->sock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (opengazer->sock < 0)   {
+			perror("Opening datagram socket");
+			exit(1);
+		}
 
-				/* Bind our local address so that the client can send to us */
-				bzero((char *) &name, sizeof(name));
-				name.sin_family = AF_INET;
-				name.sin_addr.s_addr = htonl(INADDR_ANY);
-				name.sin_port = htons(SERVER_PORT);
+		/* Bind our local address so that the client can send to us */
+		bzero((char *) &name, sizeof(name));
+		name.sin_family = AF_INET;
+		name.sin_addr.s_addr = htonl(INADDR_ANY);
+		name.sin_port = htons(SERVER_PORT);
 
-				if (bind(opengazer->sock, (struct sockaddr *) &name, sizeof(name))) {
-					perror("binding datagram socket");
-					exit(1);
-				}
+		if (bind(opengazer->sock, (struct sockaddr *) &name, sizeof(name))) {
+			perror("binding datagram socket");
+			exit(1);
+		}
 
-				printf("Socket has port number #%d\n", ntohs(name.sin_port));
+		printf("Socket has port number #%d\n", ntohs(name.sin_port));
 
-				}
+	}
+		break;
 
 	case GF_TERM_EXT_STOP:
 		close(opengazer->sock);
+		break;
 
 	case GF_TERM_EXT_PROCESS:
-	if((bytes = read(opengazer->sock, message, 1024)) > 0) {
-		message[bytes] = '\0';
-		printf("%s\n", message);
-	}
+		if((bytes = read(opengazer->sock, message, 1024)) > 0) {
+			message[bytes] = '\0';
+			printf("%s\n", message);
+
+			//send an event
+			if (0) {
+				GF_Event event;
+				memset(&event, 0, sizeof(GF_Event) );
+				event.type = GF_EVENT_KEYDOWN;
+				event.key.key_code = GF_KEY_LEFT;
+				opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
+			}
+		}
+		break;
 	}
 	return 0;
 }
