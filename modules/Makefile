@@ -113,6 +113,7 @@ ifeq ($(CONFIG_LINUX),yes)
 ifeq ($(HAS_OPENGL),yes)
 PLUGDIRS+=nvdec
 endif
+PLUGDIRS+=opengazer_client
 endif
 
 ifneq ($(CONFIG_FFMPEG), no)
