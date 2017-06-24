@@ -1,31 +1,7 @@
-/*
- *			GPAC - Multimedia Framework C SDK
- *
- *			Authors: Jean Le Feuvre
- *			Copyright (c) Telecom ParisTech 2011-2012
- *			All rights reserved
- *
- *  This file is part of GPAC / Sampe On-Scvreen Display sub-project
- *
- *  GPAC is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  GPAC is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- */
-
 #include <gpac/modules/term_ext.h>
 #include <gpac/internal/terminal_dev.h>
 #include <gpac/internal/compositor_dev.h>
+#include <gpac/options.h>
 #include <gpac/nodes_mpeg4.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -33,8 +9,34 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h> /* close */
+#include <netdb.h> /* gethostbyname */
+#include <gpac/media_tools.h>
+
 
 #define SERVER_PORT 20320
+
+#define XMIN 150
+
+#define XMAX 1200
+
+#define YMIN 100
+
+#define YMAX 650
+
+#define SERVER_PORT 20320
+
+ typedef struct
+
+{
+ int height;
+ int width;
+ Bool hasBlinked;
+} GAZE;
 
 
 typedef struct
@@ -53,8 +55,11 @@ int bytes;
 
 static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 {
-	const char *opt;
+
 	GF_OPENGAZER *opengazer = termext->udta;
+	GAZE* gaze = (GAZE*) malloc(sizeof(GAZE));
+
+	const char *opt;
 
 	switch (action) {
 	case GF_TERM_EXT_START:
@@ -80,11 +85,15 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 			perror("binding datagram socket");
 			exit(1);
 		}
+		fcntl(opengazer->sock, F_SETFL, fcntl(opengazer->sock, F_GETFL, 0) | O_NONBLOCK);
+
 
 		printf("Socket has port number #%d\n", ntohs(name.sin_port));
 
+		/*we are not threaded*/
+		termext->caps |= GF_TERM_EXTENSION_NOT_THREADED;
 	}
-		break;
+		return 1;
 
 	case GF_TERM_EXT_STOP:
 		close(opengazer->sock);
@@ -93,7 +102,50 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 	case GF_TERM_EXT_PROCESS:
 		if((bytes = read(opengazer->sock, message, 1024)) > 0) {
 			message[bytes] = '\0';
-			printf("%s\n", message);
+
+				char msg_1[20];//that will be the first line
+				char msg2[20];//that will be the second
+				char msg3[20];// that will be the third
+
+
+				char x[4];
+				char y[4];
+				char blinking[1];
+
+				int num=strstr(message,"\n") -message;
+				strncpy(msg_1,message,num);
+
+				memcpy( x, &message[2], 4 ); //x is being extracted from the first line
+
+				int i=strstr(message,"\n") -message+1;
+
+				int j=0;
+				while( message [i] != '\n')
+				{
+
+					msg2[j]=message[i];  // here we set msg2 to the second line
+					j++;
+					i++;
+				}
+				msg2[j+1]='\0';
+				j=0;
+			while(message[i+1] != '\0')
+			{
+				msg3[j]=message[i+1];   // here we set msg3 to the third line
+				j++;
+				i++;
+			}
+			msg3[j+1]='\0';
+
+			memcpy( y, &msg2[2], 4 );
+			memcpy( blinking, &msg3[5],1);
+
+			sscanf(x,"%d",&(gaze->width));
+			sscanf(y,"%d",&(gaze->height));
+			int a;
+			sscanf(blinking,"%d",&a);
+
+			gaze->hasBlinked = a ? GF_TRUE : GF_FALSE;
 
 			//send an event
 			if (0) {
@@ -103,6 +155,97 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 				event.key.key_code = GF_KEY_LEFT;
 				opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
 			}
+
+
+			     {
+					//if look's x is goes beyond XMIN, send a key_left event
+
+			               if ((gaze->width)<XMIN) {
+
+			                 GF_Event event;
+
+			                 memset(&event, 0, sizeof(GF_Event) );
+
+			                 event.type = GF_EVENT_KEYDOWN;
+
+			                 event.key.key_code = GF_KEY_LEFT;
+
+			                 opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
+
+			         }
+
+			         //if look's x is goes down XMIN, send a key_right event
+
+			               else if (gaze->width>XMAX) {
+
+			                 GF_Event event;
+
+			                 memset(&event, 0, sizeof(GF_Event) );
+
+			                 event.type = GF_EVENT_KEYDOWN;
+
+			                 event.key.key_code = GF_KEY_RIGHT;
+
+			                 opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
+
+			         }
+
+			         //if look's x is goes beyond XMAX, send a key_up event
+
+			               if (gaze->height<YMIN) {
+
+			                 GF_Event event;
+
+			                 memset(&event, 0, sizeof(GF_Event) );
+
+			                 event.type = GF_EVENT_KEYDOWN;
+
+			                 event.key.key_code = GF_KEY_UP;
+
+			                 opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
+
+			         }
+
+			         //if look's x is goes down YMIN, send a key_down event
+
+			               else if (gaze->height>YMAX)
+
+			               {
+
+			                 GF_Event event;
+
+			                 memset(&event, 0, sizeof(GF_Event) );
+
+			                 event.type = GF_EVENT_KEYDOWN;
+
+			                 event.key.key_code = GF_KEY_DOWN;
+
+			                 opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
+
+			               }
+
+			       }
+
+
+
+			     if(gaze->hasBlinked) {
+
+			       if (gf_term_get_option(opengazer->term, GF_OPT_PLAY_STATE)==GF_STATE_PLAYING) {
+
+			           gf_term_set_option(opengazer->term, GF_OPT_PLAY_STATE, GF_STATE_PAUSED);
+
+			       }
+
+
+
+			       else {
+
+			         gf_term_set_option(opengazer->term, GF_OPT_PLAY_STATE, GF_STATE_PLAYING);
+
+			       }
+
+			     }
+
 		}
 		break;
 	}
