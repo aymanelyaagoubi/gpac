@@ -362,7 +362,12 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 		}
 	} else {
 		if (is_visible) {
-			gf_mo_hint_quality_degradation(txh->stream, 0);
+			if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)){
+				if ( (vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y))
+				{
+					gf_mo_hint_quality_degradation(txh->stream, 0);
+				}
+			}
 			if (! txh->data)  return GF_FALSE;
 			return GF_TRUE;
 		} else {

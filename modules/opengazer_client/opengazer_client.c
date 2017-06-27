@@ -48,7 +48,6 @@ typedef struct
 char message[1024];
 
 struct sockaddr_in name;
-struct hostent *hp, *gethostbyname();
 int bytes;
 
 
@@ -59,7 +58,6 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 	GF_OPENGAZER *opengazer = termext->udta;
 	GAZE* gaze = (GAZE*) malloc(sizeof(GAZE));
 
-	const char *opt;
 
 	switch (action) {
 	case GF_TERM_EXT_START:
@@ -145,16 +143,9 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 			int a;
 			sscanf(blinking,"%d",&a);
 
-			gaze->hasBlinked = a ? GF_TRUE : GF_FALSE;
-
-			//send an event
-			if (0) {
-				GF_Event event;
-				memset(&event, 0, sizeof(GF_Event) );
-				event.type = GF_EVENT_KEYDOWN;
-				event.key.key_code = GF_KEY_LEFT;
-				opengazer->term->compositor->video_out->on_event(opengazer->term->compositor->video_out->evt_cbk_hdl, &event);
-			}
+			gaze->hasBlinked = a ? 1 : 0;
+			opengazer->term->compositor->gaze_x=gaze->width;
+			opengazer->term->compositor->gaze_y=gaze->height;
 
 
 			     {
@@ -226,6 +217,36 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 
 			       }
 
+			     Bool gazeTile =GF_FALSE;
+
+		/*	     for (srd in dash)
+			     {
+			    	 int width = srd[5];
+			    	 int height = srd[6];
+			    	 int columns = width/srd[3];
+			    	 int lines = height/srd[4];
+			    	 int i;
+			    	 int j;
+			    	 for (int l=0;l<width;l++)
+			    	 {
+			    		 if ((l*width/columns<=gaze->width) &&((l+1)*width/columns>=gaze->width))
+			    		 {
+			    			 i=l;
+			    			 break;
+			    		 }
+			    	 }
+			    	 for (int l=0;l<width;l++)
+			    	 {
+			    	 	if ((l*height/lines<=gaze->height) &&((l+1)*height/lines=>gaze->height))
+			    	 	{
+			    	 		j=l;
+			    	 		break;
+			    	 	}
+			    	 }
+
+			     }
+			     */
+
 
 
 			     if(gaze->hasBlinked) {
@@ -245,10 +266,12 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 			       }
 
 			     }
+					sleep(0.3);
 
 		}
 		break;
 	}
+
 	return 0;
 }
 
