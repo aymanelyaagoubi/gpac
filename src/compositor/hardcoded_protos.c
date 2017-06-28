@@ -1396,7 +1396,8 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 						gf_mo_hint_quality_degradation(txh->stream, 0);
 					tr_state->visual->compositor->hit_node = NULL;}
 				else{
-					gf_mo_hint_quality_degradation(txh->stream, 100);
+						gf_mo_hint_quality_degradation(txh->stream, 100);
+					tr_state->visual->compositor->hit_node = NULL;
 				}
 
 			}
@@ -1407,7 +1408,7 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 						GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d stoped on visible partial sphere - starting it\n", txh->stream->OD_ID));
 						assert(txh->stream && txh->stream->odm);
 						txh->stream->odm->disable_buffer_at_next_play = GF_TRUE;
-
+						gf_mo_hint_quality_degradation(txh->stream, 0);
 						gf_sc_texture_play(txh, NULL);
 					}
 					if (txh->data) {
@@ -1420,6 +1421,8 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 					if (txh->is_open) {
 						GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d playing on hidden partial sphere - stoping it\n", txh->stream->OD_ID));
 						gf_sc_texture_stop_no_unregister(txh);
+						gf_mo_hint_quality_degradation(txh->stream, 100);
+
 					}
 				}
 			} else {
