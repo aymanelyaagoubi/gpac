@@ -324,7 +324,7 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 {
 	GF_TextureHandler *txh;
 	GF_MediaObjectVRInfo vrinfo;
-	Bool is_visible = GF_TRUE;
+	Bool is_visible = GF_FALSE;
 	if (! tr_state->visual->compositor->gazer_enabled)
 		return GF_TRUE;
 
@@ -334,10 +334,11 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 	txh = gf_sc_texture_get_handler( ((M_Appearance *) tr_state->appear)->texture );
 	if (!txh->stream) return GF_TRUE;
 
-	if (! gf_mo_get_srd_info(txh->stream, &vrinfo))
-		return GF_TRUE;
+	if (! gf_mo_get_srd_info(txh->stream, &vrinfo)){
+			gf_mo_hint_quality_degradation(txh->stream, 0);
+			return GF_TRUE;
+	}
 	if (vrinfo.has_full_coverage) {
-
 				if (!txh->is_open) {
 					GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d stoped on visible partial plane - starting it\n", txh->stream->OD_ID));
 					assert(txh->stream && txh->stream->odm);
@@ -353,7 +354,6 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 				}
 				if (! txh->data)
 				{
-							gf_mo_hint_quality_degradation(txh->stream, 100);
 							return GF_FALSE;
 				}
 				return GF_TRUE;
@@ -361,14 +361,11 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 				if (txh->is_open) {
 					GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d playing on hidden partial plane - stoping it\n", txh->stream->OD_ID));
 					gf_sc_texture_stop_no_unregister(txh);
-					gf_mo_hint_quality_degradation(txh->stream, 100);
-
 				}
 				return GF_FALSE;
 
 		}
 else {
-		if (is_visible) {
 			if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)){
 				if ( (vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y))
 						{
@@ -376,14 +373,10 @@ else {
 						}
 							}
 			if (! txh->data)  return GF_FALSE;
-		return GF_TRUE;}
-		else {
-			gf_mo_hint_quality_degradation(txh->stream, 100);
-			return GF_FALSE;
-			}
+		return GF_TRUE;
+
 	}
 return GF_FALSE;
-
 }
 
 static void TraverseRectangle(GF_Node *node, void *rs, Bool is_destroy)
