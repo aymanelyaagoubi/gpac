@@ -1393,10 +1393,10 @@ static void TraverseVRGeometry(GF_Node *node, void *rs, Bool is_destroy)
 				visual_3d_vrml_drawable_pick(node, tr_state, stack->mesh, NULL);
 				if (tr_state->visual->compositor->hit_node) {
 					GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texture %d Partial sphere is under gaze coord\n", txh->stream->OD_ID));
-						gf_mo_hint_quality_degradation(txh->stream, 0);
+					gf_mo_hint_quality_degradation(txh->stream, 0);
 					tr_state->visual->compositor->hit_node = NULL;}
 				else{
-						gf_mo_hint_quality_degradation(txh->stream, 100);
+					gf_mo_hint_quality_degradation(txh->stream, 100);
 					tr_state->visual->compositor->hit_node = NULL;
 				}
 

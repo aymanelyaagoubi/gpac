@@ -324,7 +324,6 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 {
 	GF_TextureHandler *txh;
 	GF_MediaObjectVRInfo vrinfo;
-	Bool is_visible = GF_FALSE;
 	if (! tr_state->visual->compositor->gazer_enabled)
 		return GF_TRUE;
 
@@ -343,20 +342,21 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 					GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d stoped on visible partial plane - starting it\n", txh->stream->OD_ID));
 					assert(txh->stream && txh->stream->odm);
 					txh->stream->odm->disable_buffer_at_next_play = GF_TRUE;
-					if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)){
-								 		if ( (vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y))
+					if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)&&(vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y))
 								 		{
 								 			gf_mo_hint_quality_degradation(txh->stream, 0);
 								 		}
-								 	}
+					else {
+			 			gf_mo_hint_quality_degradation(txh->stream, 100);
 
 					gf_sc_texture_play(txh, NULL);
-				}
-				if (! txh->data)
-				{
+					}
+					if (! txh->data)
+						{
 							return GF_FALSE;
-				}
+						}
 				return GF_TRUE;
+				}
 
 				if (txh->is_open) {
 					GF_LOG(GF_LOG_INFO, GF_LOG_COMPOSE, ("[Compositor] Texure %d playing on hidden partial plane - stoping it\n", txh->stream->OD_ID));
@@ -365,18 +365,15 @@ Bool rectangle_check_adaptation(GF_Node *node, Drawable *stack, GF_TraverseState
 				return GF_FALSE;
 
 		}
-else {
-			if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)){
-				if ( (vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y))
-						{
+	else {
+			if ( (vrinfo.srd_x <= tr_state->visual->compositor->gaze_x) && (vrinfo.srd_x + vrinfo.srd_w >= tr_state->visual->compositor->gaze_x)&&(vrinfo.srd_y <= tr_state->visual->compositor->gaze_y) && (vrinfo.srd_y + vrinfo.srd_h >= tr_state->visual->compositor->gaze_y)){
 									gf_mo_hint_quality_degradation(txh->stream, 0);
-						}
-							}
+					}
 			if (! txh->data)  return GF_FALSE;
 		return GF_TRUE;
-
-	}
-return GF_FALSE;
+		}
+	gf_mo_hint_quality_degradation(txh->stream, 100);
+	return GF_FALSE;
 }
 
 static void TraverseRectangle(GF_Node *node, void *rs, Bool is_destroy)

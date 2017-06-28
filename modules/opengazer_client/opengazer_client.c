@@ -217,9 +217,9 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 
 			       }
 
-			     Bool gazeTile =GF_FALSE;
+			 /*    Bool gazeTile =GF_FALSE;
 
-		/*	     for (srd in dash)
+			     for (srd in dash)
 			     {
 			    	 int width = srd[5];
 			    	 int height = srd[6];
@@ -266,8 +266,6 @@ static Bool opengazer_process(GF_TermExt *termext, u32 action, void *param)
 			       }
 
 			     }
-					sleep(0.3);
-
 		}
 		break;
 	}
